@@ -177,7 +177,11 @@ class _KayitFormuState extends State<KayitFormu> {
                     if(await register(_eMail.text, _password.text, context)) {
                       await FirebaseAuth.instance.signInWithEmailAndPassword(email: _eMail.text, password: _password.text);
 
-                      _showMyDialog(context, mesaj:"Kaydınız başarıyla oluşturuldu.\nGiriş Yapabilirsiniz",basariliMi: true);
+                     await _showMyDialog(context, mesaj:"Kaydınız başarıyla oluşturuldu.\nGiriş Yapabilirsiniz",basariliMi: true);
+                    }
+                    else{
+                      _showMyDialog(context,mesaj: "Bu e-maile kayıtlı bir hesap zaten var", basariliMi: false) ;
+
                     }
 
                   },
@@ -202,7 +206,7 @@ Future<bool> register(String email, String password, BuildContext context) async
     return true;
   } on FirebaseAuthException catch (e) {
      if (e.code == 'email-already-in-use') {
-_showMyDialog(context,mesaj: "Bu e-maile kayıtlı bir hesap zaten var", basariliMi: false) ;
+     //  _showMyDialog(context,mesaj: "Bu e-maile kayıtlı bir hesap zaten var", basariliMi: false) ;
      }
     return false;
   } catch (e) {

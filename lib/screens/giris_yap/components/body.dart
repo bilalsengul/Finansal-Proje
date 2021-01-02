@@ -12,13 +12,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_signin_button/flutter_signin_button.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../constants.dart';
 import '../../../size_config.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'sifre_yenile.dart';
 
-
+final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+ bool _bool=false;
 SharedPreferences localStorage;
 
 class Body extends StatelessWidget {
@@ -65,6 +68,7 @@ class Body extends StatelessWidget {
 }
 TextEditingController _eMail  = TextEditingController();
 TextEditingController _password = TextEditingController();
+final GoogleSignIn googleSignIn = GoogleSignIn();
 
 class GirisFormu extends StatefulWidget {
 
@@ -201,10 +205,19 @@ class _GirisFormuState extends State<GirisFormu> {
                     ),
                     Text("Beni Hatırla"),
                     Spacer(flex: 10),
-                    Text(
-                      "Şifremi Unuttum.",
-                      style: TextStyle(decoration: TextDecoration.underline),
+                    GestureDetector(
+                      onTap: (){
+                        Navigator.push(context, MaterialPageRoute(builder:(context) => SifreYenile()));
+
+                      },
+                      child: Text(
+                        "Şifremi Unuttum",
+                        style: TextStyle(
+                            fontSize: genisligeGoreAyarla(context,14),
+                            color: kTextColor),
+                      ),
                     ),
+
                   ],
                 ),
                 SizedBox(
@@ -226,22 +239,10 @@ class _GirisFormuState extends State<GirisFormu> {
                         }
                       else {
 
-/*                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => Container(
-                                child: AlertDialog(
-                                  title: Text("aa"),
-
-                                ),
-                              )),
-                        );*/
-                   //   _showMyDialog(context, "E-mail adresinizi ve şifrenizi yanlış girdiniz.");
-
                       }
                         setState(() async {
-                        _eMail.clear();
-                        _password.clear();
+                      //  _eMail.clear();
+                        //_password.clear();
                       });
 
                     }
@@ -258,7 +259,23 @@ class _GirisFormuState extends State<GirisFormu> {
             SizedBox(
               height: yuksekligeGoreAyarla(context, 48),
             ),
-            SosyalMedyaGiris(),
+            SignInButton(
+
+                Buttons.GoogleDark,
+                elevation: 8,
+                //     padding: EdgeInsets.all(8),
+                text: "Google ile Giriş Yap",
+                onPressed:() async{
+                  if( await signInWithGoogle()){
+                   // Navigator.pushReplacement(context, MaterialPageRoute(builder:(context) => EasyExchange()) );
+                    _showMyDialog(context, "Bağlantı Sorunu...");
+
+                  }
+                  else{
+                    _showMyDialog(context, "Bağlantı Sorunu...");
+                  }
+                }
+            )
           ],
         ),
       ),
@@ -280,6 +297,29 @@ Future<bool> signIn(String email, String password,BuildContext context) async {
     return false;
   }
 }
+Future<bool> signInWithGoogle() async {
+
+
+    // Obtain the auth details from the request
+  final GoogleSignInAccount googleUser = await GoogleSignIn().signIn();
+
+try{
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+      // Create a new credential
+      final GoogleAuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+       FirebaseAuth.instance.signInWithCredential(credential);
+     return true;
+    }catch(e){
+}
+
+
+  }
+
+
 
 save() async {
   await GirisFormu.init();
@@ -324,3 +364,4 @@ Future<void> _showMyDialog(BuildContext context, String hata) async {
     },
   );
 }
+
