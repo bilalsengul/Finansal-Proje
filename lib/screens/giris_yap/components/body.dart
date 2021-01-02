@@ -1,8 +1,10 @@
 import 'dart:ui';
 
 import 'package:finansalproje/exchange/main2.dart';
+import 'package:finansalproje/main.dart';
 import 'package:finansalproje/screens/components/formlar.dart';
 import 'package:finansalproje/screens/components/widgets.dart';
+import 'package:finansalproje/screens/giris_yap/giris_ekrani.dart';
 import 'package:finansalproje/screens/kayit_ol/kayit_ekrani.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
@@ -10,12 +12,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_signin_button/flutter_signin_button.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../constants.dart';
 import '../../../size_config.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
+
+SharedPreferences localStorage;
+
 class Body extends StatelessWidget {
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -56,17 +63,22 @@ class Body extends StatelessWidget {
         ));
   }
 }
+TextEditingController _eMail  = TextEditingController();
+TextEditingController _password = TextEditingController();
 
 class GirisFormu extends StatefulWidget {
+
+  static Future init() async {
+    localStorage = await SharedPreferences.getInstance();
+  }
+
   @override
   _GirisFormuState createState() => _GirisFormuState();
 }
 
 class _GirisFormuState extends State<GirisFormu> {
-  TextEditingController _eMail  = TextEditingController();
-  TextEditingController _password = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
 
+  final _formKey = GlobalKey<FormState>();
   @override
   Widget build(BuildContext context) {
     bool remember = false;
@@ -201,25 +213,37 @@ class _GirisFormuState extends State<GirisFormu> {
               //  GirisYapButon(_formKey),
                 Button(
                   onPressed: () async {
+
+
                     if (_formKey.currentState.validate()) {
                       _formKey.currentState.save();
-                      if(await signIn(_eMail.text, _password.text)) {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => EasyExchange(),
-                        )
-                        );
-                      }
+
+                      if(await signIn(_eMail.text, _password.text,context)) {
+                        save();
+
+                        Navigator.pushReplacement(context, MaterialPageRoute(builder:(context) => EasyExchange()) );
+
+                        }
                       else {
-                        Navigator.push(
+
+/*                        Navigator.push(
                           context,
                           MaterialPageRoute(
                               builder: (context) => Container(
-                                child: Text("giris yapilamadi!!"),
+                                child: AlertDialog(
+                                  title: Text("aa"),
+
+                                ),
                               )),
-                        );
+                        );*/
+                   //   _showMyDialog(context, "E-mail adresinizi ve şifrenizi yanlış girdiniz.");
+
                       }
+                        setState(() async {
+                        _eMail.clear();
+                        _password.clear();
+                      });
+
                     }
 
                   },
@@ -228,8 +252,6 @@ class _GirisFormuState extends State<GirisFormu> {
                   fontColor: Colors.white,
                   fontSize: yuksekligeGoreAyarla(context, 21),
                 ),
-
-                //Sosyal medya butonları buraya gelebilir
                 NoAccountText(),
               ],
             ),
@@ -243,17 +265,62 @@ class _GirisFormuState extends State<GirisFormu> {
     );
   }
 }
-Future<bool> signIn(String email, String password) async {
+Future<bool> signIn(String email, String password,BuildContext context) async {
   try {
     await FirebaseAuth.instance
         .signInWithEmailAndPassword(email: email, password: password);
     return true;
   } on FirebaseAuthException catch (e) {
     if (e.code == 'user-not-found') {
-      print('No user found for that email.');
+     //print('No user found for that email.');
+      _showMyDialog(context, "Bu maille bir kullanıcı kaydı bulunamadı.");
     } else if (e.code == 'wrong-password') {
-      print('Wrong password provided for that user.');
+      _showMyDialog(context, "Şifreniz yanlış");
     }
     return false;
   }
+}
+
+save() async {
+  await GirisFormu.init();
+  localStorage.setString('email', _eMail.text.toString());
+  localStorage.setString('password', _password.text.toString());
+
+}
+
+Future<void> _showMyDialog(BuildContext context, String hata) async {
+  return showDialog<void>(
+    context:context ,
+   // barrierDismissible: false, // user must tap button!
+    builder: (BuildContext context) {
+      return AlertDialog(
+      //  title: Text('AlertDialog Title'),
+        content: SingleChildScrollView(
+        primary: true,
+          child: ListBody(
+            children: <Widget>[
+              Text(hata),
+
+            ],
+          ),
+        ),
+       // contentTextStyle: TextStyle(fontFamily: 'Muli'),
+        actions: <Widget>[
+
+          Button(
+
+            title: "Tamam",
+            buttonColor: Colors.red,
+            fontColor: Colors.white,
+
+            onPressed: () {
+              Navigator.of(context).pop(
+
+              );
+            },
+          ),
+        ],
+      );
+    },
+  );
 }
